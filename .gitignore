@@ -26,8 +26,3 @@ docker/mu-plugins/*
 !docker/mu-plugins/exploit-lab-fields.php
 docker/_exploit_tmp.py
 docker/_exploit_agent.py
-
-
-#files
-reports/
-exploits/
