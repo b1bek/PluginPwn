@@ -31,20 +31,30 @@ EXPLOITS_DIR = Path("exploits")
 REPORTS_DIR = Path("reports")
 
 
-def save_exploit(cve_id: str, poc_report: dict, *, failed: bool = False) -> Path | None:
+def save_exploit(cve_id: str, poc_report: dict, *, failed: bool = False, lab_assisted: bool = False) -> Path | None:
     poc = poc_report.get("result", poc_report.get("poc", poc_report))
     code = poc.get("proof_of_concept", {}).get("exploit_code", "")
     if not code:
         return None
     EXPLOITS_DIR.mkdir(parents=True, exist_ok=True)
-    filename = f"{cve_id}_FAILED.py" if failed else f"{cve_id}.py"
+    if failed:
+        filename = f"{cve_id}_FAILED.py"
+    elif lab_assisted:
+        filename = f"{cve_id}_LAB_ASSISTED.py"
+    else:
+        filename = f"{cve_id}.py"
     exploit_path = EXPLOITS_DIR / filename
     exploit_path.write_text(code)
     if not failed:
         failed_path = EXPLOITS_DIR / f"{cve_id}_FAILED.py"
         if failed_path.exists():
             failed_path.unlink()
-    color = "yellow" if failed else "green"
+    if lab_assisted:
+        color = "yellow"
+    elif failed:
+        color = "yellow"
+    else:
+        color = "green"
     console.print(f"[{color}]Exploit saved to {exploit_path}[/{color}]")
     return exploit_path
 
@@ -175,13 +185,15 @@ async def run_verify(args: argparse.Namespace) -> None:
     print_exploit_result(result)
 
     cve_id = poc_data.get("cve", "unknown")
+    is_lab_assisted = result.details.get("lab_assisted", False)
     if result.success:
-        save_exploit(cve_id, poc_data)
+        save_exploit(cve_id, poc_data, lab_assisted=is_lab_assisted)
     else:
         save_exploit(cve_id, poc_data, failed=True)
 
     verify_entry = {
         "success": result.success,
+        "lab_assisted": is_lab_assisted,
         "stage": result.stage,
         "message": result.message,
         "details": result.details,
@@ -244,7 +256,8 @@ async def run_pipeline(args: argparse.Namespace, api_key: str) -> None:
     if report_path.exists():
         try:
             existing = json.loads(report_path.read_text())
-            if existing.get("exploit", {}).get("success") is True:
+            exploit_data = existing.get("exploit", {})
+            if exploit_data.get("success") is True and not exploit_data.get("lab_assisted"):
                 exploit_path = EXPLOITS_DIR / f"{cve_id}.py"
                 if exploit_path.exists():
                     console.print(f"[green]Already succeeded — skipping (report: {report_path}, exploit: {exploit_path})[/green]")
@@ -361,13 +374,15 @@ async def run_pipeline(args: argparse.Namespace, api_key: str) -> None:
     console.print("[bold]Stage 5/5 — Results[/bold]")
     print_exploit_result(exploit_result)
 
+    is_lab_assisted = exploit_result.details.get("lab_assisted", False)
     if exploit_result.success:
-        save_exploit(cve_info.cve, poc_report)
+        save_exploit(cve_info.cve, poc_report, lab_assisted=is_lab_assisted)
     else:
         save_exploit(cve_info.cve, poc_report, failed=True)
 
     report["exploit"] = {
         "success": exploit_result.success,
+        "lab_assisted": is_lab_assisted,
         "stage": exploit_result.stage,
         "message": exploit_result.message,
         "details": exploit_result.details,

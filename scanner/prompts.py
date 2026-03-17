@@ -702,6 +702,12 @@ The code will be installed as a WordPress must-use plugin (auto-loaded on every 
 - Do NOT include a `Plugin Name` header.
 - Use WordPress hooks (`add_action`, `add_filter`, `init`, etc.) so the code runs at the right time.
 - The code must be **idempotent** — safe to run on every page load.
+- **When seeding options/settings**, always use `update_option()` unconditionally — do NOT guard
+  with `if (empty(...))` or `if (!get_option(...))`. WordPress or the plugin may have already set
+  default values (e.g. `admin_email` defaults to the site admin's email), so guarded writes will
+  silently skip your seed data. The verifier compares exploit output against seeded values, and a
+  mismatch causes a false-negative failure. The ONLY exception is file-deletion marker files, which
+  MUST use `if (!file_exists(...))` to avoid recreating the file after the exploit deletes it.
 - Do NOT include any exploit logic — only setup/prerequisites.
 - If no server-side setup is needed, omit the field entirely.
 
