@@ -287,10 +287,14 @@ def tear_down(plugin_slug: str, port: int | None = None, quiet: bool = False) ->
     )
     has_containers = bool(result.stdout.strip())
 
-    if has_containers:
-        console.print("[dim]Tearing down Docker environment...[/dim]")
-    elif not quiet:
-        console.print("[dim]Cleaning up stale Docker resources...[/dim]")
+    if quiet:
+        if has_containers:
+            console.print("[dim]Cleaning up stale Docker resources...[/dim]")
+    else:
+        if has_containers:
+            console.print("[dim]Tearing down Docker environment...[/dim]")
+        else:
+            console.print("[dim]Cleaning up stale Docker resources...[/dim]")
 
     _compose_cmd("-p", project, "down", "-v", "--remove-orphans")
 

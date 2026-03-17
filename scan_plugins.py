@@ -169,6 +169,9 @@ async def run_verify(args: argparse.Namespace) -> None:
         agent_retries=args.agent_retries,
     )
 
+    if args.setup_only:
+        return
+
     print_exploit_result(result)
 
     cve_id = poc_data.get("cve", "unknown")
