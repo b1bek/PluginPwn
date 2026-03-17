@@ -1,0 +1,28 @@
+# Python
+__pycache__/
+*.py[cod]
+*.so
+*.egg-info/
+*.egg
+
+# Virtual environments
+.venv/
+
+# Environment variables
+.env
+
+# IDE
+.idea/
+.vscode/
+.claude/
+
+# OS
+.DS_Store
+
+# Runtime outputs
+plugins/
+docker/docker-compose.override.yml
+docker/mu-plugins/*
+!docker/mu-plugins/exploit-lab-fields.php
+docker/_exploit_tmp.py
+docker/_exploit_agent.py

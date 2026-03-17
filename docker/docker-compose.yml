@@ -1,0 +1,60 @@
+services:
+  db:
+    image: mariadb:10.11
+    environment:
+      MYSQL_ROOT_PASSWORD: rootpass
+      MYSQL_DATABASE: wordpress
+      MYSQL_USER: wpuser
+      MYSQL_PASSWORD: wppass
+    healthcheck:
+      test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
+      interval: 3s
+      timeout: 3s
+      retries: 30
+    tmpfs:
+      - /var/lib/mysql
+
+  wordpress:
+    image: ${WP_IMAGE:-wordpress:6.8-php8.2-apache}
+    ports:
+      - "${WP_PORT:-8777}:80"
+    environment:
+      WORDPRESS_DB_HOST: db
+      WORDPRESS_DB_USER: wpuser
+      WORDPRESS_DB_PASSWORD: wppass
+      WORDPRESS_DB_NAME: wordpress
+      WORDPRESS_DEBUG: 1
+      WORDPRESS_DEBUG_DISPLAY: 1
+      WORDPRESS_DEBUG_LOG: 0
+    volumes:
+      - wp_data:/var/www/html
+      - ./wp-setup.sh:/usr/local/bin/wp-setup.sh:ro
+      - ./mu-plugins:/var/www/html/wp-content/mu-plugins:ro
+    depends_on:
+      db:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-sf", "http://localhost:80/"]
+      interval: 2s
+      timeout: 3s
+      retries: 30
+      start_period: 5s
+
+  wpcli:
+    image: ${WP_CLI_IMAGE:-wordpress:cli-2.12-php8.2}
+    user: "33:33"
+    environment:
+      WORDPRESS_DB_HOST: db
+      WORDPRESS_DB_USER: wpuser
+      WORDPRESS_DB_PASSWORD: wppass
+      WORDPRESS_DB_NAME: wordpress
+    volumes:
+      - wp_data:/var/www/html
+      - ./wp-setup.sh:/usr/local/bin/wp-setup.sh:ro
+    depends_on:
+      wordpress:
+        condition: service_healthy
+    entrypoint: ["sh", "/usr/local/bin/wp-setup.sh"]
+
+volumes:
+  wp_data:
