@@ -11,6 +11,40 @@ from rich.console import Console
 console = Console()
 
 DOCKER_DIR = Path(__file__).resolve().parent.parent / "docker"
+
+_compose_base: list[str] | None = None
+
+
+def _get_compose_base() -> list[str]:
+    """Return the base command for docker compose (v2 plugin or v1 standalone)."""
+    global _compose_base
+    if _compose_base is not None:
+        return list(_compose_base)
+    # Try v2 plugin first: docker compose version
+    try:
+        r = subprocess.run(
+            ["docker", "compose", "version"],
+            capture_output=True, text=True, timeout=10,
+        )
+        if r.returncode == 0:
+            _compose_base = ["docker", "compose"]
+            return list(_compose_base)
+    except (FileNotFoundError, subprocess.TimeoutExpired):
+        pass
+    # Fall back to v1 standalone: docker-compose version
+    try:
+        r = subprocess.run(
+            ["docker-compose", "version"],
+            capture_output=True, text=True, timeout=10,
+        )
+        if r.returncode == 0:
+            _compose_base = ["docker-compose"]
+            return list(_compose_base)
+    except (FileNotFoundError, subprocess.TimeoutExpired):
+        pass
+    # Default to v2 syntax (will fail with a clearer error)
+    _compose_base = ["docker", "compose"]
+    return list(_compose_base)
 DEFAULT_WP_PORT = 8777
 DEFAULT_WP_VERSION = "6.8"
 READY_TIMEOUT = 120
@@ -65,7 +99,7 @@ def _resolve_wp_image(plugin_dir: Path) -> tuple[str, str]:
 def _compose_cmd(*args: str, env: dict | None = None) -> subprocess.CompletedProcess:
     compose_file = str(DOCKER_DIR / "docker-compose.yml")
     override_file = str(DOCKER_DIR / "docker-compose.override.yml")
-    cmd = ["docker", "compose", "-f", compose_file]
+    cmd = _get_compose_base() + ["-f", compose_file]
     if Path(override_file).exists():
         cmd.extend(["-f", override_file])
     cmd.extend(args)
@@ -282,7 +316,7 @@ def tear_down(plugin_slug: str, port: int | None = None, quiet: bool = False) ->
 
     # Check if any containers are actually running for this project
     result = subprocess.run(
-        ["docker", "compose", "-p", project, "ps", "-q"],
+        _get_compose_base() + ["-p", project, "ps", "-q"],
         capture_output=True, text=True,
     )
     has_containers = bool(result.stdout.strip())
