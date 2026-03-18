@@ -226,6 +226,15 @@ your `lab_setup_php` create the user whose name matches the `authentication` fie
   }, allow_redirects=True)
   ```
   Without the initial GET, WordPress rejects the login because the test cookie is missing.
+- **Playwright login flow:** When using Playwright, NEVER use `page.wait_for_url()` after clicking
+  the login button — it races with the redirect and times out. Use `page.wait_for_load_state()`:
+  ```python
+  page.goto(f"{TARGET_URL}/wp-login.php")
+  page.fill("#user_login", USERNAME)
+  page.fill("#user_pass", PASSWORD)
+  page.click("#wp-submit")
+  page.wait_for_load_state("networkidle")
+  ```
 - **CRITICAL: The exploit MUST demonstrate actual impact — NOT just confirm vulnerable code exists.**
   Reading PHP source files and saying "vulnerability confirmed in source code" is NOT a valid exploit.
   The script must trigger the vulnerability at runtime and observe a real side effect.
@@ -297,6 +306,10 @@ your `lab_setup_php` create the user whose name matches the `authentication` fie
       **Key principle:** Proving XSS = proving the user input appears in HTML without proper
       escaping. You do NOT need the payload to actually execute JavaScript — unescaped output
       in a dangerous context (attribute, element, script block) is sufficient proof.
+
+      **wp_magic_quotes:** WordPress calls `addslashes()` on all `$_GET`/`$_POST`/`$_REQUEST` data,
+      so double quotes `"` become `\"` which breaks JavaScript. In XSS payloads that need string
+      delimiters, use backtick template literals (`` ` ``) or single quotes instead of double quotes.
     - File deletion: target file no longer exists after exploit
     - Privilege escalation: lower-privileged user gains higher access
     - RCE: The exploit must trigger code execution AND observe a unique side-effect that
@@ -435,7 +448,7 @@ your `lab_setup_php` create the user whose name matches the `authentication` fie
           page.fill("#user_login", USERNAME)
           page.fill("#user_pass", PASSWORD)
           page.click("#wp-submit")
-          page.wait_for_url("**/wp-admin/**")
+          page.wait_for_load_state("networkidle")
           # 2. Capture state BEFORE
           before = requests.get(f"{TARGET_URL}/wp-json/wp/v2/users",
                                 auth=(USERNAME, PASSWORD)).json()
@@ -487,7 +500,7 @@ your `lab_setup_php` create the user whose name matches the `authentication` fie
           page.fill("#user_login", USERNAME)
           page.fill("#user_pass", PASSWORD)
           page.click("#wp-submit")
-          page.wait_for_url("**/wp-admin/**")
+          page.wait_for_load_state("networkidle")
           # 2. Capture state BEFORE
           session = requests.Session()
           session.get(f"{TARGET_URL}/wp-login.php")
