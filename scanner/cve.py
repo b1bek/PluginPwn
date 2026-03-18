@@ -424,17 +424,17 @@ def fetch_cve_by_id(cve_id: str, plugin_slug: str | None = None) -> CVEInfo | No
         if plugin_slug:
             console.print(f"[green]Detected plugin slug from {source}: {plugin_slug}[/green]")
         else:
-            plugin_slug = _extract_theme_slug_from_nvd(cve_data)
-            if plugin_slug:
-                asset_type = "theme"
-                console.print(f"[green]Detected theme slug from {source}: {plugin_slug}[/green]")
+            theme_slug = _extract_theme_slug_from_nvd(cve_data)
+            if theme_slug:
+                console.print(f"[red]CVE targets a theme ({theme_slug}), not a plugin — skipping[/red]")
+                return None
             else:
-                console.print(f"[yellow]Could not detect plugin/theme slug from {source} data — trying cve.org affected list...[/yellow]")
+                console.print(f"[yellow]Could not detect plugin slug from {source} data — trying cve.org affected list...[/yellow]")
                 plugin_slug = _extract_slug_from_cveorg_affected(cve_id)
                 if plugin_slug:
                     console.print(f"[green]Detected plugin slug from cve.org affected: {plugin_slug}[/green]")
                 else:
-                    console.print(f"[yellow]Could not detect plugin/theme slug from any source[/yellow]")
+                    console.print(f"[yellow]Could not detect plugin slug from any source[/yellow]")
                     return None
 
     descriptions = [d["value"] for d in cve_data.get("descriptions", []) if d.get("lang") == "en"]
