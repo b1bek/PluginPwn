@@ -37,7 +37,7 @@ CVE ID → NVD Lookup → Plugin Download → AI PoC Generation → Docker Lab �
 
 - Python >= 3.12
 - [uv](https://docs.astral.sh/uv/)
-- [Docker](https://docs.docker.com/get-docker/) with Compose
+- [Docker](https://docs.docker.com/engine/install/) with Compose
 - Anthropic API key
 
 ---
