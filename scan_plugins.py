@@ -270,7 +270,7 @@ async def run_pipeline(args: argparse.Namespace, api_key: str) -> None:
     if not cve_info:
         console.print(f"[red]Could not find CVE {cve_id}[/red]")
         if not args.plugin:
-            console.print("[yellow]Tip: try --plugin <slug> to specify the plugin/theme manually[/yellow]")
+            console.print("[yellow]Tip: try --plugin <slug> to specify the plugin manually[/yellow]")
         report["stage"] = "cve_lookup_failed"
         flush()
         sys.exit(1)
