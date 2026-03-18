@@ -308,8 +308,9 @@ your `lab_setup_php` create the user whose name matches the `authentication` fie
       in a dangerous context (attribute, element, script block) is sufficient proof.
 
       **wp_magic_quotes:** WordPress calls `addslashes()` on all `$_GET`/`$_POST`/`$_REQUEST` data,
-      so double quotes `"` become `\"` which breaks JavaScript. In XSS payloads that need string
-      delimiters, use backtick template literals (`` ` ``) or single quotes instead of double quotes.
+      so both single quotes `'` and double quotes `"` become `\'` / `\"` which breaks JavaScript.
+      In XSS payloads that need string delimiters, use backtick template literals (`` ` ``) instead
+      of quotes. Example: `` document.title=`PROOF` `` instead of `document.title="PROOF"`.
     - File deletion: target file no longer exists after exploit
     - Privilege escalation: lower-privileged user gains higher access
     - RCE: The exploit must trigger code execution AND observe a unique side-effect that
